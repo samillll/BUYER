@@ -99,7 +99,6 @@
             margin-top: 4px;
         }
 
-        /* ===== TANPA VERIFIKASI ===== */
         .info-box {
             background: rgba(255, 107, 0, 0.06);
             border: 1px solid rgba(255, 107, 0, 0.08);
@@ -304,16 +303,14 @@
                 <div class="subtitle">Create Account</div>
             </div>
 
-            <!-- ===== INFO TANPA VERIFIKASI ===== -->
             <div class="info-box">
                 <i class="fas fa-info-circle"></i>
-                Langsung buat akun tanpa verifikasi.
+                Buat akun untuk login di SMXL.
                 <br>
                 <i class="fas fa-exclamation-triangle" style="color:#ffc107;"></i>
                 Maksimal 1 akun per device.
             </div>
 
-            <!-- FORM REGISTER -->
             <form id="registerForm" autocomplete="off">
                 <div class="input-group">
                     <i class="fas fa-user input-icon"></i>
@@ -329,14 +326,13 @@
                 <div class="msg" id="regMsg"></div>
             </form>
 
-            <!-- DELETE ACCOUNT -->
             <button class="btn-danger" id="deleteBtn">
                 <i class="fas fa-trash-alt"></i> Delete Account
             </button>
             <div class="msg" id="deleteMsg"></div>
 
             <div class="login-link">
-                Sudah punya akun? <a href="https://REPO-SMXL-URL/index.html" target="_blank">Login di sini</a>
+                Sudah punya akun? <a href="https://samillll.github.io/SMXL/" target="_blank">Login di sini</a>
             </div>
 
             <div class="footer">
@@ -356,8 +352,10 @@
         // KONFIGURASI
         // ============================================================
 
-        // GANTI URL INI DENGAN REPO DATA LO!
-        const DATA_URL = 'https://gist.githubusercontent.com/username/xxxxx/raw/data.json';
+        // GANTI DENGAN GIST LO!
+        const GIST_ID = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'; // ID Gist lo
+        const GIST_TOKEN = 'github_pat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'; // Token GitHub
+        const GIST_URL = `https://api.github.com/gists/${GIST_ID}`;
 
         // ============================================================
         // REFS
@@ -367,14 +365,15 @@
         const deleteMsg = document.getElementById('deleteMsg');
 
         // ============================================================
-        // FETCH DATA DARI REPO
+        // FETCH DATA DARI GIST
         // ============================================================
         async function fetchAccounts() {
             try {
-                const res = await fetch(DATA_URL + '?t=' + Date.now());
+                const res = await fetch(GIST_URL);
                 if (!res.ok) throw new Error('Gagal fetch data');
                 const data = await res.json();
-                return data.accounts || {};
+                const content = data.files['data.json'].content;
+                return JSON.parse(content).accounts || {};
             } catch (e) {
                 console.warn('Gagal load data:', e);
                 return {};
@@ -382,20 +381,32 @@
         }
 
         // ============================================================
-        // SAVE DATA KE LOCAL (SIMULASI REPO)
+        // UPDATE GIST
         // ============================================================
-        async function saveAccounts(accounts) {
-            localStorage.setItem('smxl_accounts', JSON.stringify(accounts));
-            return true;
-        }
+        async function updateGist(accounts) {
+            const payload = {
+                files: {
+                    'data.json': {
+                        content: JSON.stringify({ accounts }, null, 2)
+                    }
+                }
+            };
 
-        function getLocalAccounts() {
-            try {
-                const data = localStorage.getItem('smxl_accounts');
-                return data ? JSON.parse(data) : {};
-            } catch {
-                return {};
+            const res = await fetch(GIST_URL, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `token ${GIST_TOKEN}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Gagal update Gist');
             }
+
+            return true;
         }
 
         // ============================================================
@@ -411,7 +422,7 @@
         }
 
         // ============================================================
-        // REGISTER (LANGSUNG, TANPA VERIFIKASI)
+        // REGISTER
         // ============================================================
         registerForm.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -437,7 +448,7 @@
             }
 
             const deviceId = getDeviceId();
-            const accounts = getLocalAccounts();
+            const accounts = await fetchAccounts();
 
             // Cek apakah device sudah punya akun
             for (const key in accounts) {
@@ -462,11 +473,14 @@
                 createdAt: new Date().toISOString()
             };
 
-            await saveAccounts(accounts);
-
-            showMsg(regMsg, '✅ Akun berhasil dibuat! Silahkan login di SMXL.', 'success');
-            document.getElementById('regUsername').value = '';
-            document.getElementById('regPassword').value = '';
+            try {
+                await updateGist(accounts);
+                showMsg(regMsg, '✅ Akun berhasil dibuat! Silahkan login di SMXL.', 'success');
+                document.getElementById('regUsername').value = '';
+                document.getElementById('regPassword').value = '';
+            } catch (err) {
+                showMsg(regMsg, '❌ Gagal menyimpan akun: ' + err.message, 'error');
+            }
         });
 
         // ============================================================
@@ -476,7 +490,7 @@
             deleteMsg.classList.remove('show');
 
             const deviceId = getDeviceId();
-            const accounts = getLocalAccounts();
+            const accounts = await fetchAccounts();
 
             let foundUser = null;
             for (const key in accounts) {
@@ -496,13 +510,16 @@
             }
 
             delete accounts[foundUser];
-            await saveAccounts(accounts);
 
-            showMsg(deleteMsg, '✅ Akun berhasil dihapus!', 'success');
-
-            setTimeout(() => {
-                deleteMsg.classList.remove('show');
-            }, 3000);
+            try {
+                await updateGist(accounts);
+                showMsg(deleteMsg, '✅ Akun berhasil dihapus!', 'success');
+                setTimeout(() => {
+                    deleteMsg.classList.remove('show');
+                }, 3000);
+            } catch (err) {
+                showMsg(deleteMsg, '❌ Gagal menghapus akun: ' + err.message, 'error');
+            }
         });
 
         // ============================================================
@@ -514,32 +531,35 @@
         }
 
         // ============================================================
-        // INIT
+        // INIT - Seed default accounts kalo gist kosong
         // ============================================================
-        (function init() {
-            const accounts = getLocalAccounts();
-
-            if (Object.keys(accounts).length === 0) {
-                const defaultAccounts = {
-                    'samil': {
-                        password: 'samil123',
-                        deviceId: 'DEV_DEFAULT',
-                        role: 'Developer',
-                        exp: '99,999',
-                        createdAt: new Date().toISOString()
-                    },
-                    'admin': {
-                        password: 'admin123',
-                        deviceId: 'DEV_DEFAULT',
-                        role: 'Administrator',
-                        exp: '12,847',
-                        createdAt: new Date().toISOString()
-                    }
-                };
-                localStorage.setItem('smxl_accounts', JSON.stringify(defaultAccounts));
+        (async function init() {
+            try {
+                const accounts = await fetchAccounts();
+                if (Object.keys(accounts).length === 0) {
+                    const defaultAccounts = {
+                        'samil': {
+                            password: 'samil123',
+                            deviceId: 'DEV_DEFAULT',
+                            role: 'Developer',
+                            exp: '99,999',
+                            createdAt: new Date().toISOString()
+                        },
+                        'admin': {
+                            password: 'admin123',
+                            deviceId: 'DEV_DEFAULT',
+                            role: 'Administrator',
+                            exp: '12,847',
+                            createdAt: new Date().toISOString()
+                        }
+                    };
+                    await updateGist(defaultAccounts);
+                }
+            } catch (e) {
+                console.warn('Init gagal:', e);
             }
         })();
     </script>
 
 </body>
-  </html>
+        </html>
