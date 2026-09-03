@@ -224,20 +224,17 @@
 
     <script>
         // ============================================================
-        // KONFIGURASI — GANTI 3 BARIS INI!
+        // KONFIGURASI — GANTI DENGAN PUNYA LO!
         // ============================================================
 
-        // 1. GIST ID — ambil dari URL gist lo (32 karakter)
-        const GIST_ID = 'add2762ede99be671309b45a3aa87e61';
+        // 1. BIN ID — dari JSONBin.io (contoh: 64f3a1b2e4b0d1c2a3b4c5d6)
+        const BIN_ID = '6a996f64da38895dfe33dd2d';
 
-        // 2. GITHUB TOKEN — copy LENGKAP dari GitHub (40+ karakter)
-        const GIST_TOKEN = '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';
+        // 2. API KEY — dari JSONBin.io (contoh: $2a$10$ABC123...)
+        const API_KEY = '$2a$10$8qTaNsbZqbnutP413H87y.mP1yzZyY8tfHHzrCWn4PTkWdIOaGBfO';
 
-        // 3. RAW URL — buat baca data (otomatis pake GIST_ID)
-        const GIST_RAW_URL = `https://gist.githubusercontent.com/samillll/${GIST_ID}/raw/data.json`;
-
-        // API URL — buat update data (otomatis pake GIST_ID)
-        const GIST_API_URL = `https://api.github.com/gists/${GIST_ID}`;
+        // 3. URL API
+        const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
         // ============================================================
         // REFS
@@ -247,14 +244,14 @@
         const deleteMsg = document.getElementById('deleteMsg');
 
         // ============================================================
-        // FETCH DATA DARI GIST (PAKE RAW URL — GAK PAKE TOKEN!)
+        // FETCH DATA
         // ============================================================
         async function fetchAccounts() {
             try {
-                const res = await fetch(GIST_RAW_URL + '?t=' + Date.now());
+                const res = await fetch(API_URL);
                 if (!res.ok) throw new Error('Gagal fetch data');
                 const data = await res.json();
-                return data.accounts || {};
+                return data.record.accounts || {};
             } catch (e) {
                 console.warn('Gagal load data:', e);
                 return {};
@@ -262,21 +259,15 @@
         }
 
         // ============================================================
-        // UPDATE GIST (PAKE API URL + TOKEN)
+        // UPDATE DATA
         // ============================================================
         async function updateGist(accounts) {
-            const payload = {
-                files: {
-                    'data.json': {
-                        content: JSON.stringify({ accounts }, null, 2)
-                    }
-                }
-            };
+            const payload = { accounts };
 
-            const res = await fetch(GIST_API_URL, {
-                method: 'PATCH',
+            const res = await fetch(API_URL, {
+                method: 'PUT',
                 headers: {
-                    'Authorization': `token ${GIST_TOKEN}`,
+                    'X-Master-Key': API_KEY,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload)
@@ -284,7 +275,7 @@
 
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.message || 'Gagal update Gist');
+                throw new Error(err.message || 'Gagal update data');
             }
 
             return true;
@@ -412,7 +403,7 @@
         }
 
         // ============================================================
-        // INIT - Seed default accounts kalo gist kosong
+        // INIT - Seed default accounts kalo bin kosong
         // ============================================================
         (async function init() {
             try {
