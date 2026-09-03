@@ -224,9 +224,20 @@
 
     <script>
         // ============================================================
-        // KONFIGURASI — GANTI DENGAN RAW URL GIST LO!
+        // KONFIGURASI — GANTI 3 BARIS INI!
         // ============================================================
-        const GIST_RAW_URL = 'https://gist.github.com/samillll/add2762ede99be671309b45a3aa87e61.js';
+
+        // 1. GIST ID — ambil dari URL gist lo (32 karakter)
+        const GIST_ID = 'add2762ede99be671309b45a3aa87e61';
+
+        // 2. GITHUB TOKEN — copy LENGKAP dari GitHub (40+ karakter)
+        const GIST_TOKEN = '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';
+
+        // 3. RAW URL — buat baca data (otomatis pake GIST_ID)
+        const GIST_RAW_URL = `https://gist.githubusercontent.com/samillll/${GIST_ID}/raw/data.json`;
+
+        // API URL — buat update data (otomatis pake GIST_ID)
+        const GIST_API_URL = `https://api.github.com/gists/${GIST_ID}`;
 
         // ============================================================
         // REFS
@@ -236,7 +247,7 @@
         const deleteMsg = document.getElementById('deleteMsg');
 
         // ============================================================
-        // FETCH DATA DARI GIST (PAKE RAW URL)
+        // FETCH DATA DARI GIST (PAKE RAW URL — GAK PAKE TOKEN!)
         // ============================================================
         async function fetchAccounts() {
             try {
@@ -251,14 +262,8 @@
         }
 
         // ============================================================
-        // UPDATE DATA — PAKE GIST API + TOKEN (TAPI CUMA BUAT UPDATE)
+        // UPDATE GIST (PAKE API URL + TOKEN)
         // ============================================================
-        // INI MASIH PAKE TOKEN! TAPI TOKENNYA HARUS BENER.
-        // KALO LO GAK PUNYA TOKEN, LO BISA UPDATE MANUAL LEWAT GIST.
-        // ============================================================
-        const GIST_API_URL = 'https://api.github.com/gists/add2762ede99be671309b45a3aa87e61';
-        const GIST_TOKEN = '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';
-
         async function updateGist(accounts) {
             const payload = {
                 files: {
@@ -398,13 +403,16 @@
             }
         });
 
+        // ============================================================
+        // UTILITY
+        // ============================================================
         function showMsg(el, text, type) {
             el.textContent = text;
             el.className = 'msg show ' + type;
         }
 
         // ============================================================
-        // INIT
+        // INIT - Seed default accounts kalo gist kosong
         // ============================================================
         (async function init() {
             try {
@@ -427,6 +435,7 @@
                         }
                     };
                     await updateGist(defaultAccounts);
+                    console.log('✅ Default accounts created!');
                 }
             } catch (e) {
                 console.warn('Init gagal:', e);
@@ -434,4 +443,4 @@
         })();
     </script>
 </body>
-</html>
+    </html>
