@@ -248,7 +248,7 @@
         // ============================================================
         async function fetchAccounts() {
             try {
-                const res = await fetch(API_URL);
+                const res = await fetch(API_URL + '?t=' + Date.now());
                 if (!res.ok) throw new Error('Gagal fetch data');
                 const data = await res.json();
                 return data.record.accounts || {};
@@ -259,9 +259,9 @@
         }
 
         // ============================================================
-        // UPDATE DATA
+        // UPDATE DATA — KE JSONBIN (BUKAN LOCALSTORAGE!)
         // ============================================================
-        async function updateGist(accounts) {
+        async function updateAccounts(accounts) {
             const payload = { accounts };
 
             const res = await fetch(API_URL, {
@@ -346,7 +346,7 @@
             };
 
             try {
-                await updateGist(accounts);
+                await updateAccounts(accounts);
                 showMsg(regMsg, '✅ Akun berhasil dibuat! Silahkan login di SMXL.', 'success');
                 document.getElementById('regUsername').value = '';
                 document.getElementById('regPassword').value = '';
@@ -384,7 +384,7 @@
             delete accounts[foundUser];
 
             try {
-                await updateGist(accounts);
+                await updateAccounts(accounts);
                 showMsg(deleteMsg, '✅ Akun berhasil dihapus!', 'success');
                 setTimeout(() => {
                     deleteMsg.classList.remove('show');
@@ -425,7 +425,7 @@
                             createdAt: new Date().toISOString()
                         }
                     };
-                    await updateGist(defaultAccounts);
+                    await updateAccounts(defaultAccounts);
                     console.log('✅ Default accounts created!');
                 }
             } catch (e) {
