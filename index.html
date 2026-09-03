@@ -227,13 +227,13 @@
         // KONFIGURASI — GANTI DENGAN PUNYA LO!
         // ============================================================
 
-        // 1. BIN ID — dari JSONBin.io (contoh: 64f3a1b2e4b0d1c2a3b4c5d6)
+        // BIN ID — dari JSONBin.io
         const BIN_ID = '6a997430f5f4af5e29658392';
 
-        // 2. API KEY — dari JSONBin.io (contoh: $2a$10$ABC123...)
+        // API KEY — dari JSONBin.io
         const API_KEY = '$2a$10$8qTaNsbZqbnutP413H87y.mP1yzZyY8tfHHzrCWn4PTkWdIOaGBfO';
 
-        // 3. URL API
+        // API URL
         const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
         // ============================================================
@@ -248,7 +248,11 @@
         // ============================================================
         async function fetchAccounts() {
             try {
-                const res = await fetch(API_URL + '?t=' + Date.now());
+                const res = await fetch(API_URL + '?t=' + Date.now(), {
+                    headers: {
+                        'X-Master-Key': API_KEY
+                    }
+                });
                 if (!res.ok) throw new Error('Gagal fetch data');
                 const data = await res.json();
                 return data.record.accounts || {};
@@ -259,7 +263,7 @@
         }
 
         // ============================================================
-        // UPDATE DATA — KE JSONBIN (BUKAN LOCALSTORAGE!)
+        // UPDATE DATA — KE JSONBIN
         // ============================================================
         async function updateAccounts(accounts) {
             const payload = { accounts };
@@ -434,4 +438,4 @@
         })();
     </script>
 </body>
-    </html>
+</html>
